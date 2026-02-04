@@ -9,7 +9,7 @@
 #include "protocol.h"
 
 #define DEVICE_NAME "breeze_rw"
-static int major_number; // Auto number yahan save hoga
+static int major_number = -1; // Default -1
 
 static long my_ioctl(struct file *file, unsigned int cmd, unsigned long arg) {
     if (cmd == IOCTL_RW_MEM) {
@@ -29,19 +29,23 @@ static struct file_operations fops = {
 };
 
 static int __init driver_entry(void) {
-    // 0 dalne se kernel khud ek free number allot karega
+    // 0 matlab kernel khud ek free number dega
     major_number = register_chrdev(0, DEVICE_NAME, &fops);
+    
     if (major_number < 0) {
-        printk(KERN_ALERT "Breeze Driver: Failed to register major number\n");
-        return major_number;
+        printk(KERN_ALERT "Breeze Driver: Registration failed with %d\n", major_number);
+        return major_number; // Agar error hai toh driver load nahi hoga (Safe)
     }
+    
     printk(KERN_INFO "Breeze Driver Loaded! Major Number: %d\n", major_number);
     return 0;
 }
 
 static void __exit driver_exit(void) {
-    unregister_chrdev(major_number, DEVICE_NAME);
-    printk(KERN_INFO "Breeze Driver Unloaded\n");
+    if (major_number >= 0) {
+        unregister_chrdev(major_number, DEVICE_NAME);
+        printk(KERN_INFO "Breeze Driver Unloaded\n");
+    }
 }
 
 module_init(driver_entry);
