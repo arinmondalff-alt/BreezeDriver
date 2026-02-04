@@ -4,19 +4,30 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - name: Setup Tools
-        run: sudo apt-get update && sudo apt-get install -y bc build-essential bison flex libssl-dev libelf-dev clang lld
-      - name: Download GKI
-        run: git clone https://android.googlesource.com/kernel/common -b android12-5.10 --depth 1 kernel-source
-      - name: Build
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Build Environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bc build-essential bison flex libssl-dev libelf-dev clang lld gcc-aarch64-linux-gnu
+
+      - name: Download GKI Kernel Source
+        run: |
+          git clone https://android.googlesource.com/kernel/common -b android12-5.10 --depth 1 kernel-source
+
+      - name: Prepare Kernel Headers
         run: |
           cd kernel-source
+          make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- LLVM=1 gki_defconfig
           make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- LLVM=1 modules_prepare
-          cd ..
+
+      - name: Build Module
+        run: |
           make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- LLVM=1 KDIR=$GITHUB_WORKSPACE/kernel-source
-      - name: Upload
-        uses: actions/upload-artifact@v3
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
         with:
           name: BreezeDriver
           path: main.ko
