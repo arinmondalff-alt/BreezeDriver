@@ -13,15 +13,26 @@
 static long my_ioctl(struct file *file, unsigned int cmd, unsigned long arg) {
     if (cmd == IOCTL_RW_MEM) {
         k_rw_request req;
-        if (copy_from_user(&req, (void __user *)arg, sizeof(req))) return -EFAULT;
-        struct task_struct *task = pid_task(find_vpid(req.pid), PIDTYPE_PID);
-        if (!task) return -ESRCH;
-        return access_process_vm(task, req.addr, req.buffer, req.size, req.is_write);
+        struct task_struct *task; // Declaration ko upar kar diya
+
+        if (copy_from_user(&req, (void __user *)arg, sizeof(req))) {
+            return -EFAULT;
+        }
+
+        task = pid_task(find_vpid(req.pid), PIDTYPE_PID); // Ab kaam shuru
+        if (!task) {
+            return -ESRCH;
+        }
+
+        return (long)access_process_vm(task, req.addr, req.buffer, req.size, req.is_write);
     }
     return -EINVAL;
 }
 
-static struct file_operations fops = { .unlocked_ioctl = my_ioctl, .owner = THIS_MODULE };
+static struct file_operations fops = {
+    .unlocked_ioctl = my_ioctl,
+    .owner = THIS_MODULE,
+};
 
 static int __init driver_entry(void) {
     register_chrdev(100, DEVICE_NAME, &fops);
