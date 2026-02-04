@@ -6,7 +6,7 @@
 #include <linux/mm.h>
 #include <linux/sched/mm.h>
 #include <linux/pid.h>
-#include <linux/miscdevice.h> // Naya header
+#include <linux/miscdevice.h>
 #include "protocol.h"
 
 static long my_ioctl(struct file *file, unsigned int cmd, unsigned long arg) {
@@ -26,7 +26,6 @@ static struct file_operations fops = {
     .owner = THIS_MODULE,
 };
 
-// Misc Device Structure
 static struct miscdevice breeze_misc = {
     .minor = MISC_DYNAMIC_MINOR,
     .name = "breeze_rw",
@@ -35,18 +34,26 @@ static struct miscdevice breeze_misc = {
 
 static int __init driver_entry(void) {
     int ret;
+    
+    // Debug 1: Init start
+    printk(KERN_INFO "Breeze_Debug: Starting driver_entry\n");
+
     ret = misc_register(&breeze_misc);
-    if (ret) {
-        printk(KERN_ERR "Breeze Driver: Registration failed!\n");
+    
+    if (ret < 0) {
+        // Debug 2: Fail
+        printk(KERN_ERR "Breeze_Debug: misc_register failed with %d\n", ret);
         return ret;
     }
-    printk(KERN_INFO "Breeze Driver Loaded! Misc device registered.\n");
+
+    // Debug 3: Success
+    printk(KERN_INFO "Breeze_Debug: Driver Loaded! /dev/breeze_rw created.\n");
     return 0;
 }
 
 static void __exit driver_exit(void) {
     misc_deregister(&breeze_misc);
-    printk(KERN_INFO "Breeze Driver Unloaded\n");
+    printk(KERN_INFO "Breeze_Debug: Driver Unloaded\n");
 }
 
 module_init(driver_entry);
